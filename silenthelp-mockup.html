@@ -640,6 +640,19 @@ function renderLearnModal(){
 }
 
 render();
+
+(function() {
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }
+  window.addEventListener('message', event => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data?.type === 'theme') {
+      document.documentElement.setAttribute('data-theme', event.data.theme);
+    }
+  });
+})();
 </script>
 </body>
 </html>

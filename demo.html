@@ -7,12 +7,12 @@
 <meta name="description" content="Interact with the SilentHelp mobile app prototype in a live demo view.">
 <link rel="stylesheet" href="styles.css">
 <style>
-  body{background:#070b14; margin:0;}
-  .demo-nav{position:fixed; top:0; left:0; right:0; z-index:100; background:rgba(14,18,21,.96); border-bottom:1px solid var(--line);}
+  body{background:var(--ink); margin:0;}
+  .demo-nav{position:fixed; top:0; left:0; right:0; z-index:100; background:var(--nav); border-bottom:1px solid var(--line);}
   .demo-nav .nav-inner{max-width:var(--wrap); margin:0 auto; padding:16px 28px; display:flex; align-items:center; justify-content:space-between; gap:16px;}
-  .demo-nav .brand{font-size:18px; color:var(--paper);}
+  .demo-nav .brand{font-size:18px; color:var(--nav-text);}
   .demo-nav .nav-right{display:flex; align-items:center; gap:12px;}
-  .demo-nav .btn-ghost{border:1px solid rgba(255,255,255,.12); color:var(--paper); background:transparent;}
+  .demo-nav .btn-ghost{border:1px solid var(--ghost-border); color:var(--nav-text); background:transparent;}
   .demo-nav .nav-cta{background:var(--teal); color:#081d16;}
   main.demo-page{padding:120px 28px 60px; min-height:100vh;}
   .demo-hero{max-width:1240px; margin:0 auto; display:grid; grid-template-columns:minmax(320px,1.1fr) minmax(360px,540px); gap:44px; align-items:center;}
@@ -36,6 +36,7 @@
     <div class="brand">SilentHelp Demo</div>
     <div class="nav-right">
       <a class="btn-ghost" href="index.html">Back to homepage</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme">🌙 Dark</button>
       <a class="nav-cta" href="index.html#download">Join testing</a>
     </div>
   </div>
@@ -61,5 +62,6 @@
     </div>
   </section>
 </main>
+<script src="scripts.js"></script>
 </body>
 </html>

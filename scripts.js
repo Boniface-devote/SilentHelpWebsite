@@ -1,7 +1,50 @@
+const themeToggles = document.querySelectorAll('.theme-toggle');
+const storedTheme = localStorage.getItem('theme');
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+const initialTheme = storedTheme || (prefersDark ? 'dark' : 'light');
 
-  const menu = document.querySelector('.nav-menu');
-  const toggle = document.querySelector('.nav-toggle');
-  const navLinks = ['Problem', 'Features', 'Demo', 'FAQ', 'Technical', 'Accessibility', 'Contact'];
+const demoIframe = document.querySelector('.demo-frame iframe');
+
+const iframeOrigin = window.location.origin || '*';
+function syncIframeTheme(theme) {
+  if (demoIframe?.contentWindow) {
+    demoIframe.contentWindow.postMessage({ type: 'theme', theme }, iframeOrigin);
+  }
+}
+
+function updateToggleButtons(theme) {
+  themeToggles.forEach(button => {
+    button.innerHTML = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+    button.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+  });
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  updateToggleButtons(theme);
+  syncIframeTheme(theme);
+}
+
+applyTheme(initialTheme);
+
+if (demoIframe) {
+  demoIframe.addEventListener('load', () => syncIframeTheme(document.documentElement.getAttribute('data-theme')));
+}
+
+if (themeToggles.length) {
+  themeToggles.forEach(button => {
+    button.addEventListener('click', () => {
+      const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      applyTheme(nextTheme);
+      localStorage.setItem('theme', nextTheme);
+    });
+  });
+}
+
+const menu = document.querySelector('.nav-menu');
+const toggle = document.querySelector('.nav-toggle');
+const navLinks = ['Problem', 'Features', 'Demo', 'FAQ', 'Technical', 'Accessibility', 'Contact'];
+if (menu && toggle) {
   menu.innerHTML = navLinks.map(label => {
     const anchor = label.toLowerCase().replace(/\s+/g, '-');
     return `<a href="#${anchor}" data-nav>${label}</a>`;
@@ -19,6 +62,8 @@
       toggle.setAttribute('aria-label', 'Open navigation');
     }
   });
+}
+
   document.querySelectorAll('.faq-item').forEach(button => {
     button.addEventListener('click', () => {
       const isOpen = button.getAttribute('aria-expanded') === 'true';
@@ -52,26 +97,31 @@
     });
   });
   const backToTop = document.querySelector('.back-to-top');
-  window.addEventListener('scroll', () => {
-    backToTop.classList.toggle('visible', window.scrollY > 400);
-  });
-  backToTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  if (backToTop) {
+    window.addEventListener('scroll', () => {
+      backToTop.classList.toggle('visible', window.scrollY > 400);
+    });
+    backToTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
   const contactForm = document.getElementById('contact-form');
   const successMessage = document.getElementById('form-success');
-  contactForm.addEventListener('submit', event => {
-    event.preventDefault();
-    const name = contactForm.name.value.trim();
-    const email = contactForm.email.value.trim();
-    const message = contactForm.message.value.trim();
-    if (!name || !email || !message) {
-      successMessage.textContent = 'Please fill out every field before sending.';
-      successMessage.style.color = 'var(--coral)';
+  if (contactForm && successMessage) {
+    contactForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const name = contactForm.name.value.trim();
+      const email = contactForm.email.value.trim();
+      const message = contactForm.message.value.trim();
+      if (!name || !email || !message) {
+        successMessage.textContent = 'Please fill out every field before sending.';
+        successMessage.style.color = 'var(--coral)';
+        successMessage.classList.add('visible');
+        return;
+      }
+      successMessage.textContent = 'Thanks! Your message is ready to send from your device.';
+      successMessage.style.color = 'var(--teal)';
       successMessage.classList.add('visible');
-      return;
-    }
-    successMessage.textContent = 'Thanks! Your message is ready to send from your device.';
-    successMessage.style.color = 'var(--teal)';
-    successMessage.classList.add('visible');
-    contactForm.reset();
-  });
+      contactForm.reset();
+    });
+  }
+
 
