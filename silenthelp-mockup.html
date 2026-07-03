@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SilentHelp</title>
+<style>
+  :root{
+    --bg:#0a0e1a;
+    --panel:#131a2c;
+    --panel-2:#171f34;
+    --line:#232c44;
+    --text:#f2f4f8;
+    --sub:#8892a8;
+    --purple:#8b7ff5;
+    --purple-dim:#4a4470;
+    --teal:#2fd7ab;
+    --teal-dim:#123028;
+    --blue:#4d8dff;
+    --blue-dim:#132038;
+    --red:#ff5259;
+    --red-dim:#3a1418;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;background:#000;}
+  body{
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display:flex; align-items:flex-start; justify-content:center;
+    min-height:100vh; width: 380px;
+    height: 700px;
+    ;
+  }
+  .device{
+    width:380px; height:780px; background:var(--bg); border-radius:40px;
+    border:8px solid #05070d; box-shadow:0 30px 60px rgba(0,0,0,.5);
+    overflow:hidden; position:relative; display:flex; flex-direction:column;
+  }
+  .statusbar{
+    height:34px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 22px; font-size:13px; color:#e7eaf1; font-weight:600; flex-shrink:0;
+  }
+  .statusbar .dot{width:5px;height:5px;border-radius:50%;background:#e7eaf1;opacity:.5;}
+  .screen{ flex:1; overflow-y:auto; padding:6px 20px 14px; position:relative; }
+  .screen::-webkit-scrollbar{display:none;}
+  .screen-title{ font-size:26px; font-weight:800; letter-spacing:-0.02em; margin:10px 0 4px; color:var(--text); }
+  .screen-title.center{ text-align:center; }
+  .pill{
+    display:inline-flex; align-items:center; gap:6px; padding:8px 16px;
+    border-radius:999px; font-size:13px; font-weight:700; letter-spacing:.02em;
+  }
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:18px;
+    padding:16px; display:flex; align-items:center; gap:14px; margin-bottom:12px;
+  }
+  .icon-tile{
+    width:52px; height:52px; border-radius:14px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .row-title{ font-size:16px; font-weight:700; color:var(--text); margin-bottom:2px;}
+  .row-sub{ font-size:13px; color:var(--sub); }
+  .play-btn{
+    width:44px; height:44px; border-radius:50%; border:none; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .play-btn svg{ margin-left:2px; }
+
+  /* Bottom nav */
+  .navbar{
+    display:flex; justify-content:space-around; align-items:center;
+    background:#0d1220; border-top:1px solid var(--line);
+    padding:10px 4px calc(10px + 2px); flex-shrink:0;
+  }
+  .navitem{
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    color:var(--sub); font-size:11px; font-weight:600; background:none; border:none;
+    cursor:pointer; padding:6px 10px; border-radius:14px; transition:all .15s ease;
+  }
+  .navitem .navicon{ width:22px; height:22px; display:flex; align-items:center; justify-content:center;}
+  .navitem.active{ color:var(--text); }
+  .navitem.active.home{ background:rgba(139,127,245,.16); color:var(--purple);}
+  .navitem.active.emergency{ background:rgba(255,82,89,.16); color:var(--red);}
+  .navitem.active.talk{ background:rgba(47,215,171,.16); color:var(--teal);}
+  .navitem.active.phrases{ background:rgba(77,141,255,.16); color:var(--blue);}
+  .navitem.active.card{ background:rgba(139,127,245,.16); color:var(--purple);}
+
+  .home-indicator{ position:absolute; bottom:6px; left:50%; transform:translateX(-50%); width:120px; height:4px; background:#333d55; border-radius:3px;}
+
+  /* Home screen */
+  .home-header{ display:flex; align-items:center; justify-content:space-between; margin-top:8px;}
+  .brand{ font-size:20px; font-weight:900; letter-spacing:.06em; color:var(--text);}
+  .gear{ width:38px; height:38px; border-radius:12px; background:var(--panel); display:flex; align-items:center; justify-content:center; border:1px solid var(--line);}
+  .greeting{ margin-top:22px; color:var(--sub); font-size:14px; font-weight:600;}
+  .username{ font-size:30px; font-weight:800; color:var(--text); margin:2px 0 2px;}
+  .question{ color:var(--sub); font-size:15px; margin-bottom:20px;}
+
+  .sos-hero{
+    width:100%; padding:26px 20px; border-radius:22px; border:none; cursor:pointer;
+    background:linear-gradient(160deg,#ff6a6f,#ff3d45);
+    box-shadow:0 14px 30px rgba(255,60,68,.35);
+    text-align:center; margin-bottom:22px;
+  }
+  .sos-hero .t1{ color:#fff; font-size:22px; font-weight:900; letter-spacing:.02em;}
+  .sos-hero .t2{ color:rgba(255,255,255,.85); font-size:13px; font-weight:600; margin-top:6px;}
+
+  .grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+  .tile{
+    background:var(--panel); border:1px solid var(--line); border-radius:18px;
+    padding:18px 10px 14px; display:flex; flex-direction:column; align-items:center; gap:10px;
+    cursor:pointer;
+  }
+  .tile .tico{ width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center;}
+  .tile .tname{ font-size:13px; font-weight:700; color:var(--text); text-align:center;}
+  .tile .tsub{ font-size:10.5px; color:var(--sub); text-align:center; margin-top:-6px;}
+  .tile.wide{ grid-column:span 1; }
+
+  /* Emergency screen */
+  .status-pill.active{ background:rgba(255,82,89,.14); color:var(--red); border:1px solid rgba(255,82,89,.3);}
+  .ready-box{
+    display:flex; gap:12px; align-items:flex-start; background:var(--teal-dim);
+    border:1px solid rgba(47,215,171,.3); border-radius:16px; padding:14px; margin:16px 0;
+  }
+  .ready-box .check{ width:22px; height:22px; border-radius:50%; background:var(--teal); flex-shrink:0; display:flex; align-items:center; justify-content:center; margin-top:1px;}
+  .ready-box .t1{ color:var(--teal); font-weight:700; font-size:14.5px;}
+  .ready-box .t2{ color:#b7c3d4; font-size:12.5px; margin-top:4px; display:flex; align-items:center; gap:6px;}
+  .sos-big{
+    width:100%; background:linear-gradient(160deg,#2c3550,#1a2136); border:1px solid var(--line);
+    border-radius:22px; padding:34px 18px; text-align:center; cursor:pointer; margin-bottom:16px;
+  }
+  .sos-big.armed{ background:linear-gradient(160deg,#ff6a6f,#ff3d45); border:none; box-shadow:0 14px 30px rgba(255,60,68,.35);}
+  .sos-big .st1{ font-size:26px; font-weight:900; letter-spacing:.03em; color:var(--text);}
+  .sos-big.armed .st1{ color:#fff;}
+  .sos-big .st2{ font-size:13px; color:var(--sub); margin-top:10px; font-weight:600;}
+  .sos-big.armed .st2{ color:rgba(255,255,255,.85);}
+  .gps-card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:18px;}
+  .gps-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .gps-label{ font-size:12px; color:var(--sub); font-weight:700; text-transform:uppercase; letter-spacing:.04em;}
+  .dot-live{ width:9px; height:9px; border-radius:50%; background:var(--teal); box-shadow:0 0 0 4px rgba(47,215,171,.18);}
+  .gps-main{ display:flex; gap:10px; align-items:flex-start;}
+  .gps-addr{ font-size:15px; font-weight:700; color:var(--text);}
+  .gps-coord{ font-size:12.5px; color:var(--sub); margin-top:3px;}
+  .gps-acc{ font-size:12px; color:var(--sub); margin-top:2px;}
+  .section-label{ font-size:12px; color:var(--sub); font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin:14px 0 10px;}
+  .contact-card{ display:flex; align-items:center; justify-content:space-between; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:14px 16px; margin-bottom:14px;}
+  .contact-name{ font-weight:700; font-size:15px; color:var(--text);}
+  .contact-phone{ font-size:13px; color:var(--sub); margin-top:2px;}
+  .call-btn{ background:var(--teal); border:none; color:#052b22; font-weight:800; font-size:13px; padding:10px 18px; border-radius:999px; cursor:pointer;}
+
+  /* Talk mode */
+  .live-pill{ background:rgba(47,215,171,.14); color:var(--teal); border:1px solid rgba(47,215,171,.35);}
+  .field-label{ font-size:13px; color:var(--sub); font-weight:600; margin:16px 0 8px;}
+  .listen-box{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:20px 16px; color:#5b6580; font-style:italic; font-size:14.5px; min-height:56px;}
+  .listen-box.filled{ color:var(--text); font-style:normal; font-weight:600;}
+  .mic-row{ display:flex; justify-content:center; align-items:center; gap:26px; margin:26px 0;}
+  .circle-btn{ width:52px; height:52px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; background:var(--panel-2); color:var(--teal);}
+  .circle-btn.big{ width:78px; height:78px; background:var(--teal); color:#06281f; box-shadow:0 0 0 10px rgba(47,215,171,.12), 0 10px 26px rgba(47,215,171,.35);}
+  .mic-hint{ text-align:center; color:var(--sub); font-size:12.5px; margin-top:-14px; margin-bottom:6px;}
+  .reply-box{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px 16px; min-height:24px;}
+  .type-row{ display:flex; gap:10px; align-items:center;}
+  .type-input{ flex:1; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px; color:var(--text); font-size:14px;}
+  .type-input::placeholder{ color:#5b6580;}
+  .send-circle{ width:44px; height:44px; border-radius:50%; border:none; background:var(--teal); color:#06281f; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;}
+  .send-circle.grey{ background:var(--panel-2); color:var(--sub);}
+
+  /* Quick phrases */
+  .tabs{ display:flex; gap:8px; overflow-x:auto; padding:4px 0 16px; scrollbar-width:none;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{ flex-shrink:0; padding:9px 16px; border-radius:999px; font-size:13.5px; font-weight:700; background:var(--panel); color:var(--sub); border:1px solid var(--line); cursor:pointer; white-space:nowrap;}
+  .tab.active-emergency{ background:var(--red); color:#fff; border-color:var(--red);}
+  .tab.active-daily{ background:var(--teal); color:#06281f; border-color:var(--teal);}
+  .tab.active-medical{ background:var(--blue); color:#fff; border-color:var(--blue);}
+  .tab.active-shopping{ background:var(--purple); color:#fff; border-color:var(--purple);}
+  .phrase-row{ display:flex; align-items:center; justify-content:space-between; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:12px;}
+  .phrase-text{ font-size:15px; font-weight:700; color:var(--text); flex:1; padding-right:12px;}
+
+  /* ID Card */
+  .id-wrap{ margin-top:8px; }
+  .id-hero{ background:linear-gradient(135deg,#28d6a8,#1fb890); border-radius:20px 20px 0 0; padding:18px 20px;}
+  .id-hero .id-app{ font-size:16px; font-weight:900; color:#04241c;}
+  .id-hero .id-sub{ font-size:11px; font-weight:700; color:#0b3a2e; letter-spacing:.08em; margin-top:2px;}
+  .id-body{ background:var(--panel); border:1px solid var(--line); border-top:none; padding:20px; border-radius:0 0 20px 20px; margin-bottom:16px;}
+  .id-name-row{ display:flex; align-items:center; gap:14px; margin-bottom:16px;}
+  .avatar{ width:56px; height:56px; border-radius:14px; background:var(--teal-dim); border:1px solid rgba(47,215,171,.4); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .id-yourname{ font-size:12px; color:var(--sub); font-weight:700; letter-spacing:.06em; text-transform:uppercase;}
+  .id-badges{ display:flex; gap:8px; margin-top:6px;}
+  .badge{ font-size:12px; font-weight:800; padding:5px 12px; border-radius:8px;}
+  .badge.deaf{ background:var(--blue-dim); color:var(--blue); border:1px solid rgba(77,141,255,.35);}
+  .badge.blood{ background:var(--red-dim); color:var(--red); border:1px solid rgba(255,82,89,.35);}
+  .lang-box{ border:1px solid rgba(47,215,171,.35); background:var(--teal-dim); border-radius:14px; padding:14px 16px; margin-bottom:16px;}
+  .lang-title{ color:var(--teal); font-weight:800; font-size:14.5px; margin-bottom:8px;}
+  .lang-item{ color:#c3ccdc; font-size:13px; margin:5px 0; display:flex; gap:8px; align-items:center;}
+  .info-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;}
+  .info-label{ font-size:11.5px; color:var(--sub); font-weight:700; display:flex; align-items:center; gap:5px; margin-bottom:4px;}
+  .info-val{ font-size:14px; font-weight:700; color:var(--text);}
+  .note-box{ background:#241d0c; border:1px solid rgba(230,180,40,.3); border-radius:12px; padding:12px 14px;}
+  .note-label{ color:#e6b428; font-size:11.5px; font-weight:700; display:flex; gap:5px; align-items:center; margin-bottom:4px;}
+  .note-text{ color:#e9dcb0; font-size:13.5px; font-weight:600;}
+  .id-footer{ display:flex; justify-content:space-between; font-size:11px; color:#4d5670; margin-top:12px;}
+  .qr-card{ background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:18px; text-align:center; margin-bottom:16px;}
+  .qr-title{ color:var(--sub); font-size:11.5px; font-weight:800; letter-spacing:.08em; margin-bottom:14px;}
+
+  /* Learn signs */
+  .lang-pill{ background:var(--purple-dim); color:#cfc8ff; border:1px solid rgba(139,127,245,.4);}
+  .sign-icon{ background:var(--purple-dim); color:var(--purple);}
+  .sign-play{ background:var(--purple);}
+
+  .modal-overlay{ position:absolute; inset:0; background:rgba(4,6,12,.55); display:flex; align-items:flex-end; z-index:10; }
+  .modal-sheet{ width:100%; background:var(--bg); border-radius:24px 24px 0 0; padding:20px 20px 90px; border-top:1px solid var(--line); animation:slideup .22s ease;}
+  @keyframes slideup{ from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;} }
+  .modal-title{ font-size:22px; font-weight:900; color:var(--text); margin-bottom:14px;}
+  .video-box{ border-radius:18px; overflow:hidden; position:relative; height:300px; background:linear-gradient(160deg,#1b3a52,#0e2436); display:flex; align-items:center; justify-content:center;}
+  .video-figure{ font-size:90px; }
+  .video-pause{ position:absolute; width:56px; height:56px; border-radius:50%; background:rgba(10,14,26,.55); border:2px solid rgba(255,255,255,.5); display:flex; align-items:center; justify-content:center; cursor:pointer;}
+  .close-x{ position:absolute; top:16px; right:20px; width:32px; height:32px; border-radius:50%; background:var(--panel-2); display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid var(--line);}
+
+  .fade-el{ opacity:.35; }
+</style>
+</head>
+<body>
+<div class="device" id="device">
+
+  <div class="statusbar">
+    <span id="clock">4:58</span>
+    <span class="dot"></span>
+  </div>
+
+  <div class="screen" id="screen"></div>
+
+  <div class="navbar">
+    <button class="navitem home" data-screen="home" onclick="go('home')">
+      <span class="navicon">${'ICON_HOME'}</span>Home
+    </button>
+    <button class="navitem emergency" data-screen="emergency" onclick="go('emergency')">
+      <span class="navicon">${'ICON_ALERT'}</span>Emergency
+    </button>
+    <button class="navitem talk" data-screen="talk" onclick="go('talk')">
+      <span class="navicon">${'ICON_MIC'}</span>Talk
+    </button>
+    <button class="navitem phrases" data-screen="phrases" onclick="go('phrases')">
+      <span class="navicon">${'ICON_CHAT'}</span>Phrases
+    </button>
+    <button class="navitem card" data-screen="card" onclick="go('card')">
+      <span class="navicon">${'ICON_CARD'}</span>Card
+    </button>
+  </div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+/* ---------- ICONS (feather-style inline SVG) ---------- */
+const ICONS = {
+  home: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>`,
+  alert: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`,
+  mic: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2"/><path d="M12 19v3"/></svg>`,
+  chat: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+  card: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>`,
+  gear: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>`,
+  hand: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>`,
+  play: `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`,
+  pause: `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>`,
+  mappin: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  phone: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.4 2.1L8 10.3a16 16 0 0 0 6 6l1.5-1.5a2 2 0 0 1 2-.4c1 .3 2 .5 3 .6a2 2 0 0 1 1.7 2Z"/></svg>`,
+  user: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21a8 8 0 1 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>`,
+  pencil: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>`,
+  msg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+  hand2: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>`,
+  note: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 3.4a2 2 0 0 0-2.8 0L4 17.2V20h2.8L20.6 6.2a2 2 0 0 0 0-2.8Z"/></svg>`,
+  check: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#06281f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`,
+  vol: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>`,
+  bars: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-6"/></svg>`,
+  send: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`,
+  close: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
+  book: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>`
+};
+
+document.querySelectorAll('.navicon').forEach(el=>{});
+document.querySelector('[data-screen=home] .navicon').innerHTML = ICONS.home;
+document.querySelector('[data-screen=emergency] .navicon').innerHTML = ICONS.alert;
+document.querySelector('[data-screen=talk] .navicon').innerHTML = ICONS.mic;
+document.querySelector('[data-screen=phrases] .navicon').innerHTML = ICONS.chat;
+document.querySelector('[data-screen=card] .navicon').innerHTML = ICONS.card;
+
+/* ---------- STATE ---------- */
+let state = {
+  screen: 'home',
+  phraseTab: 'medical',
+  sosArmed: false,
+  listening: false,
+  heardText: '',
+  replyText: '',
+  typeText: '',
+  learnModal: null,
+  videoPlaying: true
+};
+
+const PHRASES = {
+  emergency: [
+    "I need help immediately!",
+    "I use Ugandan Sign Language",
+    "Please call 911 or emergency services",
+    "Please call my emergency contact",
+    "I may not hear spoken words"
+  ],
+  daily: [
+    "Good morning",
+    "Thank you very much",
+    "Can you write it down?",
+    "I don't understand",
+    "Nice to meet you"
+  ],
+  medical: [
+    "I am in pain",
+    "I need my medication",
+    "Where is the nearest hospital?",
+    "I am diabetic",
+    "I have a heart condition",
+    "I feel sick"
+  ],
+  shopping: [
+    "How much does this cost?",
+    "Do you have this in another size?",
+    "Can I pay by card?",
+    "I would like a receipt"
+  ]
+};
+
+const SIGNS = [
+  {name:"Hello", sub:"Greeting sign"},
+  {name:"Help", sub:"Assistance sign"},
+  {name:"My name is\u2026", sub:"Introduction sign"},
+  {name:"Thank you", sub:"Gratitude sign"},
+  {name:"I am deaf", sub:"Identity sign"}
+];
+
+function go(screen){
+  state.screen = screen;
+  render();
+}
+
+function esc(s){ return s; }
+
+/* ---------- RENDER ---------- */
+function render(){
+  document.querySelectorAll('.navitem').forEach(n=>{
+    n.classList.toggle('active', n.dataset.screen === state.screen);
+  });
+
+  const s = document.getElementById('screen');
+  let html = '';
+
+  if(state.screen === 'home') html = renderHome();
+  else if(state.screen === 'emergency') html = renderEmergency();
+  else if(state.screen === 'talk') html = renderTalk();
+  else if(state.screen === 'phrases') html = renderPhrases();
+  else if(state.screen === 'card') html = renderCard();
+  else if(state.screen === 'learn') html = renderLearn();
+
+  s.innerHTML = html;
+
+  if(state.learnModal !== null){
+    s.insertAdjacentHTML('beforeend', renderLearnModal());
+  }
+}
+
+function renderHome(){
+  return `
+    <div class="home-header">
+      <div class="brand">SILENTHELP</div>
+      <div class="gear" onclick="go('home')">${ICONS.gear}</div>
+    </div>
+    <div class="greeting">Good afternoon</div>
+    <div class="username">Your Name</div>
+    <div class="question">What do you need today?</div>
+
+    <button class="sos-hero" onclick="go('emergency')">
+      <div class="t1">SOS EMERGENCY</div>
+      <div class="t2">Tap to send help signal</div>
+    </button>
+
+    <div class="grid">
+      <div class="tile" onclick="go('talk')">
+        <div class="tico" style="background:var(--teal-dim); color:var(--teal);">${ICONS.mic}</div>
+        <div class="tname">Talk mode</div>
+        <div class="tsub">Real-time</div>
+      </div>
+      <div class="tile" onclick="go('phrases')">
+        <div class="tico" style="background:#3a2c0c; color:#e6b428;">${ICONS.msg}</div>
+        <div class="tname">Quick phrases</div>
+        <div class="tsub">One-tap</div>
+      </div>
+      <div class="tile" onclick="go('card')">
+        <div class="tico" style="background:var(--blue-dim); color:var(--blue);">${ICONS.card}</div>
+        <div class="tname">My ID card</div>
+        <div class="tsub">Share</div>
+      </div>
+      <div class="tile" onclick="go('learn')">
+        <div class="tico" style="background:var(--purple-dim); color:var(--purple);">${ICONS.book}</div>
+        <div class="tname">Learn signs</div>
+      </div>
+      <div class="tile" onclick="go('home')">
+        <div class="tico" style="background:var(--teal-dim); color:var(--teal);">${ICONS.gear}</div>
+        <div class="tname">Settings</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderEmergency(){
+  return `
+    <div class="screen-title">Emergency</div>
+    <span class="pill status-pill active">ACTIVE</span>
+
+    <div class="ready-box">
+      <div class="check">${ICONS.check}</div>
+      <div>
+        <div class="t1">Ready to send emergency alert</div>
+        <div class="t2">${ICONS.mappin} Location ready &nbsp; <span style="width:8px;height:8px;border-radius:50%;background:var(--teal);display:inline-block;"></span> (Accurate)</div>
+      </div>
+    </div>
+
+    <button class="sos-big ${state.sosArmed ? 'armed':''}" onclick="toggleSos()">
+      <div class="st1">${state.sosArmed ? 'SENDING SOS\u2026' : 'SEND SOS'}</div>
+      <div class="st2">${state.sosArmed ? 'Alerting your emergency contact now' : 'Emergency contact is required to use SOS feature'}</div>
+    </button>
+
+    <div class="gps-card">
+      <div class="gps-top">
+        <span class="gps-label">GPS location</span>
+        <span class="dot-live"></span>
+      </div>
+      <div class="gps-main">
+        ${ICONS.mappin}
+        <div>
+          <div class="gps-addr">CM7X+GXP, Mukono, Central Region</div>
+          <div class="gps-coord">0.4137, 32.6986</div>
+          <div class="gps-acc">Accuracy: 25m</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Emergency contacts</div>
+    <div class="contact-card">
+      <div>
+        <div class="contact-name">emergency contact name</div>
+        <div class="contact-phone">+2567XXXXXXXX</div>
+      </div>
+      <button class="call-btn">CALL</button>
+    </div>
+  `;
+}
+
+function toggleSos(){
+  state.sosArmed = !state.sosArmed;
+  render();
+}
+
+function renderTalk(){
+  return `
+    <div class="screen-title">Talk mode</div>
+    <span class="pill live-pill">LIVE</span>
+
+    <div class="field-label">They said (microphone)</div>
+    <div class="listen-box ${state.heardText ? 'filled':''}">${state.heardText || 'Listening for speech\u2026'}</div>
+
+    <div class="mic-row">
+      <button class="circle-btn" onclick="playHeard()">${ICONS.vol}</button>
+      <button class="circle-btn big" onclick="toggleListen()">${ICONS.mic}</button>
+      <button class="circle-btn" onclick="null">${ICONS.bars}</button>
+    </div>
+    <div class="mic-hint">Tap mic to listen &middot; tap speaker to play</div>
+
+    <div class="field-label">Your reply (type below)</div>
+    <div class="reply-box">&nbsp;</div>
+
+    <div class="field-label">Type what you want to say:</div>
+    <div class="type-row">
+      <input class="type-input" placeholder="Type your message\u2026" value="${state.typeText}" oninput="state.typeText=this.value" />
+      <button class="send-circle">${ICONS.vol}</button>
+      <button class="send-circle grey">${ICONS.send}</button>
+    </div>
+  `;
+}
+
+function toggleListen(){
+  state.listening = !state.listening;
+  state.heardText = state.listening ? "Hi, how can I help you today?" : '';
+  render();
+}
+function playHeard(){ /* visual only */ }
+
+function renderPhrases(){
+  const cats = [
+    {key:'emergency', label:'Emergency'},
+    {key:'daily', label:'Daily'},
+    {key:'medical', label:'Medical'},
+    {key:'shopping', label:'Shopping'}
+  ];
+  const colorMap = {emergency:'var(--red)', daily:'var(--teal)', medical:'var(--blue)', shopping:'var(--purple)'};
+  const list = PHRASES[state.phraseTab];
+
+  return `
+    <div class="screen-title">Quick phrases</div>
+    <div class="tabs">
+      ${cats.map(c=>`<button class="tab ${state.phraseTab===c.key ? 'active-'+c.key : ''}" onclick="setTab('${c.key}')">${c.label}</button>`).join('')}
+    </div>
+    ${list.map(p=>`
+      <div class="phrase-row">
+        <div class="phrase-text">${p}</div>
+        <button class="play-btn" style="background:${colorMap[state.phraseTab]}; color:${state.phraseTab==='daily' ? '#06281f' : '#fff'};">${ICONS.play}</button>
+      </div>
+    `).join('')}
+  `;
+}
+function setTab(t){ state.phraseTab = t; render(); }
+
+function renderCard(){
+  return `
+    <div class="screen-title">My ID card</div>
+    <div class="id-wrap">
+      <div class="id-hero">
+        <div class="id-app">SilentHelp</div>
+        <div class="id-sub">MEDICAL IDENTIFICATION</div>
+      </div>
+      <div class="id-body">
+        <div class="id-name-row">
+          <div class="avatar">${ICONS.user}</div>
+          <div>
+            <div class="id-yourname">YOUR NAME</div>
+            <div class="id-badges">
+              <span class="badge deaf">DEAF</span>
+              <span class="badge blood">Blood group ??</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="lang-box">
+          <div class="lang-title">I use Ugandan Sign Language (UgSL)</div>
+          <div style="font-size:12px;color:#7d8aa0;font-weight:600;margin-bottom:6px;">Please communicate by:</div>
+          <div class="lang-item">${ICONS.pencil} Writing</div>
+          <div class="lang-item">${ICONS.msg} Text message</div>
+          <div class="lang-item">${ICONS.hand2} Simple gestures</div>
+        </div>
+
+        <div class="info-grid">
+          <div>
+            <div class="info-label">${ICONS.phone} Phone</div>
+            <div class="info-val">+2567XXXXXXXX</div>
+          </div>
+          <div>
+            <div class="info-label">${ICONS.user} Emergency contact</div>
+            <div class="info-val">emergency contact name</div>
+          </div>
+        </div>
+
+        <div class="note-box">
+          <div class="note-label">${ICONS.note} Note</div>
+          <div class="note-text">I communicate via text</div>
+        </div>
+
+        <div class="id-footer">
+          <span>ID #58292679</span>
+          <span>2026</span>
+        </div>
+      </div>
+
+      <div class="qr-card">
+        <div class="qr-title">SCAN TO VIEW CARD</div>
+        ${qrSvg()}
+      </div>
+    </div>
+  `;
+}
+
+function qrSvg(){
+  // decorative pseudo-QR pattern
+  let cells = '';
+  const n = 21, size = 240, cell = size/n;
+  const seed = 42; let x = seed;
+  function rnd(){ x = (x*1103515245+12345)%2147483648; return (x/2147483648); }
+  for(let r=0;r<n;r++){
+    for(let c=0;c<n;c++){
+      const isFinder = (r<7&&c<7)||(r<7&&c>=n-7)||(r>=n-7&&c<7);
+      let on;
+      if(isFinder){
+        const rr = r<7?r:r-(n-7), cc=c<7?c:c-(n-7);
+        on = (rr===0||rr===6||cc===0||cc===6||(rr>=2&&rr<=4&&cc>=2&&cc<=4));
+      } else {
+        on = rnd() > 0.55;
+      }
+      if(on) cells += `<rect x="${c*cell}" y="${r*cell}" width="${cell}" height="${cell}" fill="#0a0e1a"/>`;
+    }
+  }
+  return `<svg width="180" height="180" viewBox="0 0 ${size} ${size}" style="background:#fff;border-radius:12px;">${cells}</svg>`;
+}
+
+function renderLearn(){
+  return `
+    <div class="screen-title">Learn signs</div>
+    <span class="pill lang-pill">Uganda SL</span>
+    <div style="margin-top:16px;"></div>
+    ${SIGNS.map((sg,i)=>`
+      <div class="card">
+        <div class="icon-tile sign-icon">${ICONS.hand}</div>
+        <div style="flex:1;">
+          <div class="row-title">${sg.name}</div>
+          <div class="row-sub">${sg.sub}</div>
+        </div>
+        <button class="play-btn sign-play" onclick="openLearn(${i})">${ICONS.play}</button>
+      </div>
+    `).join('')}
+  `;
+}
+
+function openLearn(i){
+  state.learnModal = i;
+  state.videoPlaying = true;
+  render();
+}
+function closeLearn(){
+  state.learnModal = null;
+  render();
+}
+function toggleVideo(){
+  state.videoPlaying = !state.videoPlaying;
+  render();
+}
+
+function renderLearnModal(){
+  const sg = SIGNS[state.learnModal];
+  return `
+    <div class="modal-overlay" onclick="if(event.target===this) closeLearn()">
+      <div class="modal-sheet">
+        <div class="close-x" onclick="closeLearn()">${ICONS.close}</div>
+        <div class="modal-title">${sg.name}</div>
+        <div class="video-box" onclick="toggleVideo()">
+          <div class="video-figure">\u{1F44B}</div>
+          ${state.videoPlaying ? `<div class="video-pause">${ICONS.pause}</div>` : `<div class="video-pause">${ICONS.play}</div>`}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+render();
+
+(function() {
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }
+  window.addEventListener('message', event => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data?.type === 'theme') {
+      document.documentElement.setAttribute('data-theme', event.data.theme);
+    }
+  });
+})();
+</script>
+</body>
+</html>
